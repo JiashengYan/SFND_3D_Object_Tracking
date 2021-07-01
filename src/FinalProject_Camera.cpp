@@ -129,7 +129,7 @@ int main(int argc, const char *argv[])
         clusterLidarWithROI((dataBuffer.end()-1)->boundingBoxes, (dataBuffer.end() - 1)->lidarPoints, shrinkFactor, P_rect_00, R_rect_00, RT);
 
         // Visualize 3D objects
-        bVis = true;
+        bVis = false;
         if(bVis)
         {
             show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 20.0), cv::Size(2000, 2000), true);
@@ -140,7 +140,7 @@ int main(int argc, const char *argv[])
         
         
         // REMOVE THIS LINE BEFORE PROCEEDING WITH THE FINAL PROJECT
-        continue; // skips directly to the next image without processing what comes beneath
+        //continue; // skips directly to the next image without processing what comes beneath
 
         /* DETECT IMAGE KEYPOINTS */
 
@@ -156,9 +156,22 @@ int main(int argc, const char *argv[])
         {
             detKeypointsShiTomasi(keypoints, imgGray, false);
         }
+        else if (detectorType.compare("HARRIS") == 0)
+        {
+            detKeypointsHarris(keypoints, imgGray, false);
+        }
+        else if (detectorType.compare("FAST")  == 0 ||
+                 detectorType.compare("BRISK") == 0 ||
+                 detectorType.compare("ORB")   == 0 ||
+                 detectorType.compare("AKAZE") == 0 ||
+                 detectorType.compare("SIFT")  == 0)
+        {
+            detKeypointsModern(keypoints, imgGray, detectorType, false);
+        }
+
         else
         {
-            //...
+            throw invalid_argument(detectorType + " is not a valid detectorType");
         }
 
         // optional : limit number of keypoints (helpful for debugging and learning)
@@ -200,12 +213,18 @@ int main(int argc, const char *argv[])
 
             vector<cv::DMatch> matches;
             string matcherType = "MAT_BF";        // MAT_BF, MAT_FLANN
-            string descriptorType = "DES_BINARY"; // DES_BINARY, DES_HOG
+
+            string descriptorArt; // DES_BINARY, DES_HOG
+            if(descriptorType.compare("BRIEF")==0 or descriptorType.compare("BRISK")==0 or descriptorType.compare("AKAZE")==0 or descriptorType.compare("FREAK")==0 or descriptorType.compare("ORB")==0)
+                descriptorArt="DES_BINARY";
+            else
+                descriptorArt="DES_HOG";
+
             string selectorType = "SEL_NN";       // SEL_NN, SEL_KNN
 
             matchDescriptors((dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints,
                              (dataBuffer.end() - 2)->descriptors, (dataBuffer.end() - 1)->descriptors,
-                             matches, descriptorType, matcherType, selectorType);
+                             matches, descriptorArt, matcherType, selectorType);
 
             // store matches in current data frame
             (dataBuffer.end() - 1)->kptMatches = matches;
